@@ -55,6 +55,7 @@ int mic_tcp_connect(int socket, mic_tcp_sock_addr addr)
  */
 int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
 {
+	int sent_size;
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
     mic_tcp_pdu pdu;
     //completer le payload
@@ -72,10 +73,9 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     mic_tcp_sock_addr a = socket_return;
 
     //envoi du pdu
-    IP_send(pdu, a);
+    sent_size = IP_send(pdu, a);
 
-	
-    return mesg_size;
+    return sent_size;
 }
 
 /*
