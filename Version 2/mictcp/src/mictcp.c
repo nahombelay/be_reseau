@@ -5,6 +5,8 @@
  * Permet de créer un socket entre l’application et MIC-TCP
  * Retourne le descripteur du socket ou bien -1 en cas d'erreur
  */
+int PE;
+
 mic_tcp_sock_addr socket_return;
 
 int mic_tcp_socket(start_mode sm)
@@ -60,21 +62,44 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     //completer le payload
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
+
     //completer le header
     pdu.header.source_port = 0;
     pdu.header.dest_port = 0;
-    pdu.header.seq_num = 0;
+    pdu.header.seq_num = PE; // mis a jour de nseq avec pe
     pdu.header.ack_num = 0;
     pdu.header.syn = 0; 
     pdu.header.ack = 0; 
     pdu.header.fin = 0; 
+
     //remplir adresse ip
     mic_tcp_sock_addr a = socket_return;
+    
+    //place message dans le buffer
+	app_buffer_put(pdu.payload);
 
     //envoi du pdu
     IP_send(pdu, a);
 
-	
+    //activation du timer 
+    mic_tcp_pdu pdu_recv;
+    pdu_recv.payload.data = NULL;
+    pdu_recv.payload.size = 0;
+
+    mic_tcp_sock_addr addr_recv;
+    unsigned long tps = 100;
+
+    while (IP_recv(&pdu_recv, &addr_recv, tps) == -1){
+        IP_send(pdu, a);
+    }
+    //reception d'un ack
+
+    //desactive timer
+
+    //libere buffer
+
+    //mis a jour du PE
+    PE = PE + 1 % 2;
     return mesg_size;
 }
 
