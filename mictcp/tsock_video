@@ -36,7 +36,8 @@ fi
 if [ "$puits" = true ]; then
 
     echo "Lancement du puits, protocole " $protocol
-    cvlc rtp://127.0.0.1:$port > /dev/null 2>&1 &
+    #cvlc rtp://127.0.0.1:$port > /dev/null 2>&1 &
+    open /Applications/VLC.app --args rtp://127.0.0.1:$port > /dev/null 2>&1
 
     if [ "$protocol" = "mictcp" ]; then
         cd build
@@ -57,7 +58,8 @@ echo "Appuyez sur ENTREE pour arreter"
 read line
 
 echo "Arret"
-killall -9 cvlc > /dev/null 2>&1
-killall -9 vlc > /dev/null 2>&1
+#killall -9 cvlc > /dev/null 2>&1
+#killall -9 vlc > /dev/null 2>&1
+killall -9 VLC > /dev/null 2>&1
 killall -9 gateway > /dev/null 2>&1
 
