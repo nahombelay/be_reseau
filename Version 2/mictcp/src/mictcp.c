@@ -15,7 +15,7 @@ int mic_tcp_socket(start_mode sm)
    int result = -1;
    printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
    result = initialize_components(sm); /* Appel obligatoire */
-   set_loss_rate(5);
+   set_loss_rate(20);
 
    return result;
 }
@@ -93,7 +93,7 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     unsigned long tps = 5;
 
     //tant que ack n'est pas reçu envoi pdu
-    while (IP_recv(&pdu_recv, &addr_recv, tps) == -1 || pdu_recv.header.ack != 1){
+    while (IP_recv(&pdu_recv, &addr_recv, tps) == -1 || (pdu_recv.header.ack_num != PE)){
         //printf("[MIC-TCP perte packet]: " ); printf(__FUNCTION__); printf("\n");
         size_sent = IP_send(pdu, a);
     }
@@ -146,23 +146,18 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr)
     pdua.payload.data = NULL;
     pdua.payload.size = 0;
 
-    //completer le header
-    pdua.header.source_port = 0;
-    pdua.header.dest_port = 0;
-    pdua.header.seq_num = 0; 
-    pdua.header.ack_num = 0;
-    pdua.header.syn = 0; 
     pdua.header.ack = 1; 
+    PA = (PA + 1) % 2;
+    pdua.header.ack_num = PA; 
 
     if (pdu.header.seq_num == PA){
         app_buffer_put(pdu.payload);
-        printf("[MIC-TCP envoie d'un ack]: " ); printf(__FUNCTION__); printf("\n");
-        PA = (PA + 1) % 2;
+        IP_send(pdua, addr);
+        
     } else {
-        pdua.header.ack = 0;
+        IP_send(pdua, addr);
     }
-    IP_send(pdua, addr);
-    printf("[MIC-TCP] envoi d'un ACK "); printf(__FUNCTION__); printf("\n");
+    
 
 
 }
