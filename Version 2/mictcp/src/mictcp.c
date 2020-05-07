@@ -5,7 +5,8 @@
  * Permet de créer un socket entre l’application et MIC-TCP
  * Retourne le descripteur du socket ou bien -1 en cas d'erreur
  */
-int PE;
+ static int PE = 0;
+ static int PA = 0;
 
 mic_tcp_sock_addr socket_return;
 
@@ -14,7 +15,7 @@ int mic_tcp_socket(start_mode sm)
    int result = -1;
    printf("[MIC-TCP] Appel de la fonction: ");  printf(__FUNCTION__); printf("\n");
    result = initialize_components(sm); /* Appel obligatoire */
-   set_loss_rate(0);
+   set_loss_rate(5);
 
    return result;
 }
@@ -63,6 +64,8 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
 
+    int size_sent;
+
     //completer le header
     pdu.header.source_port = 0;
     pdu.header.dest_port = 0;
@@ -75,11 +78,11 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     //remplir adresse ip
     mic_tcp_sock_addr a = socket_return;
     
-    //place message dans le buffer
-	app_buffer_put(pdu.payload);
+    //place message dans le buffer (pas necessaire)
+	//app_buffer_put(pdu.payload);
 
     //envoi du pdu
-    IP_send(pdu, a);
+    size_sent = IP_send(pdu, a);
 
     //activation du timer 
     mic_tcp_pdu pdu_recv;
@@ -87,19 +90,16 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     pdu_recv.payload.size = 0;
 
     mic_tcp_sock_addr addr_recv;
-    unsigned long tps = 100;
+    unsigned long tps = 5;
 
-    while (IP_recv(&pdu_recv, &addr_recv, tps) == -1){
-        IP_send(pdu, a);
+    //tant que ack n'est pas reçu envoi pdu
+    while (IP_recv(&pdu_recv, &addr_recv, tps) == -1 || pdu_recv.header.ack != 1){
+        //printf("[MIC-TCP perte packet]: " ); printf(__FUNCTION__); printf("\n");
+        size_sent = IP_send(pdu, a);
     }
-    //reception d'un ack
-
-    //desactive timer
-
-    //libere buffer
-
+    printf("[MIC-TCP reception d'un ack]: " ); printf(__FUNCTION__); printf("\n");
     //mis a jour du PE
-    PE = PE + 1 % 2;
+    PE = (PE + 1) % 2;
     return mesg_size;
 }
 
@@ -140,5 +140,29 @@ int mic_tcp_close (int socket)
 void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr)
 {
     printf("[MIC-TCP] Appel de la fonction: "); printf(__FUNCTION__); printf("\n");
-    app_buffer_put(pdu.payload);
+
+    mic_tcp_pdu pdua;
+    //completer le payload
+    pdua.payload.data = NULL;
+    pdua.payload.size = 0;
+
+    //completer le header
+    pdua.header.source_port = 0;
+    pdua.header.dest_port = 0;
+    pdua.header.seq_num = 0; 
+    pdua.header.ack_num = 0;
+    pdua.header.syn = 0; 
+    pdua.header.ack = 1; 
+
+    if (pdu.header.seq_num == PA){
+        app_buffer_put(pdu.payload);
+        printf("[MIC-TCP envoie d'un ack]: " ); printf(__FUNCTION__); printf("\n");
+        PA = (PA + 1) % 2;
+    } else {
+        pdua.header.ack = 0;
+    }
+    IP_send(pdua, addr);
+    printf("[MIC-TCP] envoi d'un ACK "); printf(__FUNCTION__); printf("\n");
+
+
 }
