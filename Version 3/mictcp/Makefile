@@ -10,7 +10,7 @@ endif
 CC        := gcc
 LD        := gcc
 
-TAR_FILENAME := $(DATE)-mictcp-$(TAG).tar.gz
+TAR_FILENAME := $(DATE)-mictcpbonus-$(TAG).tar.gz
 
 MODULES   := api apps
 SRC_DIR   := $(addprefix src/,$(MODULES)) src

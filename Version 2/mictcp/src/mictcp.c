@@ -64,7 +64,6 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
     pdu.payload.data = mesg;
     pdu.payload.size = mesg_size;
 
-    int size_sent;
 
     //completer le header
     pdu.header.source_port = 0;
@@ -82,7 +81,7 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
 	//app_buffer_put(pdu.payload);
 
     //envoi du pdu
-    size_sent = IP_send(pdu, a);
+    IP_send(pdu, a);
 
     //activation du timer 
     mic_tcp_pdu pdu_recv;
@@ -94,7 +93,7 @@ int mic_tcp_send (int mic_sock, char* mesg, int mesg_size)
 
     //tant que ack n'est pas reçu envoi pdu
     while (IP_recv(&pdu_recv, &addr_recv, tps) == -1 || (pdu_recv.header.ack_num == PE)){
-        size_sent = IP_send(pdu, a);
+        IP_send(pdu, a);
     }
     //mis a jour du PE
     PE = (PE + 1) % 2;
@@ -145,7 +144,6 @@ void process_received_PDU(mic_tcp_pdu pdu, mic_tcp_sock_addr addr)
     pdua.payload.size = 0;
 
     pdua.header.ack = 1; 
-    PA = (PA + 1) % 2;
 
     if (pdu.header.seq_num == PA){
         app_buffer_put(pdu.payload);
